@@ -1,8 +1,8 @@
 openapi: 3.0.1
 info:
   version: "0.0.0"
-  title: DPP-Server
-  description: The API for provisioning DPP enabled devices via a Configuration Agent
+  title: DPP-Server (MSO Portal)
+  description: The API for provisioning DPP enabled devices via a Configuration Agent (implemented in MSO Portal)
   license: 
     name: Apache 2.0
     url: https://github.com/cablelabs/micronets/blob/master/LICENSE
@@ -17,11 +17,53 @@ tags:
 - name: dpp
   description: Actions specific to DPP (Device Provisioning Protocol)
 paths:
+  /dpp/login:
+    post:
+      tags:
+      - dpp
+      description: XHR login request
+      operationId: dppLogin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Login'
+        description: user credentials - username, password
+        required: true
+      responses:
+        '201':
+          description: session created
+        '401':
+          description: unauthorized
+  /dpp/logout:
+    post:
+      tags:
+      - dpp
+      description: XHR logout request
+      operationId: dppLogout
+      responses:
+        '200':
+          description: No active session, noop
+        '204':
+          description: Session destroyed
+        '500':
+          description: Unable to destroy active session
+  /dpp/checksession:
+    post:
+      tags:
+      - dpp
+      description: Check if login is required
+      operationId: dppCheckSession
+      responses:
+        '200':
+          description: session is active, login not required
+        '401':
+          description: session not active, login is required
   /dpp/onboard:
     post:
       tags:
       - dpp
-      description: 'Initiate DPP bootstrap, authentication and configuration process'
+      description: Initiate DPP bootstrap, authentication and configuration process
       operationId: dppOnboard
       requestBody:
         content:
@@ -34,23 +76,107 @@ paths:
         '200':
           description: DPP onboard initiated. If connectWait==true, STA has associated.
         '408':
-          description: If connectWait==true and operation timed out because STA did not associate'
+          description: Operation timed out because STA did not associate'
   
+  /dpp/getconfig:
+    get:
+      tags:
+      - dpp
+      description: Request configuration object used by DPP Mobile Application
+      operationId: dppGetConfig
+      responses:
+        '200':
+          description: JSON configuration object returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Config'
+
+
 components:
   schemas:
     Bootstrap:
       type: object
       properties:
-        uri:
-          type: string
-          description: generated URI from dpp_bootstrap_gen
-        role:
-          type: string
-          description: requested enrollee role, must be AP or STA
-        connectWait:
-          type: boolean
-          description: If true, don't return until STA associates
-          
+        bootstrap:
+          type: object
+          description: information obtained from the Enrollee QRCode
+          properties:
+            uri:
+              type: string
+              description: generated URI from dpp_bootstrap_gen
+            mac:
+              type: string
+              description: enrollee device mac address, parsed from URI
+            pubkey:
+              type: string
+              description: enrollee device ID (public key), parsed from URI
+            vendor:
+              type: string
+              description: enrollee vendor code, parsed from URI 'information' field
+          required:
+            - uri
+            - mac
+            - pubkey
+        user:
+          type: object
+          description: device attributes assigned by user at onboard time
+          properties:
+            deviceRole:
+              type: string
+              description: requested enrollee role, must be 'ap' or 'sta'
+            deviceName:
+              type: string
+              description: user assigned friendly device name, eg. Printer12
+          required:
+            - deviceRole
+            - deviceName
+        device:
+          type: object
+          description: device properties, most likely from MUD file
+          properties:
+            class:
+              type: string
+              description: device classification, used for network assignment
+            type:
+              type: string
+              description: type of device, eg. printer, camera, etc
+            model: 
+              type: string
+              description: marketing name of device model
+            modelUID:
+              type: string
+              description: manufacturer unique identifier of device model
+            manufacturer:
+              type: string
+              description: manufacturer name
+          required:
+            - class
       required:
-        - uri
-        - role
+        - bootstrap
+        - user
+        - device
+
+    Login:
+      type: object
+      properties:
+        username:
+          type: string
+          description: unique user ID
+        password:
+          type: string
+          description: user password
+      required:
+        - username
+        - password
+        
+    Config:
+      type: object
+      description: Configuration object used by DPP Mobile Application
+      properties:
+        deviceClasses:
+          type: array
+          items:
+            type: string
+          description: predefined device class names
+          
