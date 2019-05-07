@@ -78,12 +78,12 @@ paths:
         '408':
           description: Operation timed out because STA did not associate'
   
-  /dpp/getconfig:
+  /dpp/config:
     get:
       tags:
       - dpp
       description: Request configuration object used by DPP Mobile Application
-      operationId: dppGetConfig
+      operationId: dppConfig
       responses:
         '200':
           description: JSON configuration object returned
