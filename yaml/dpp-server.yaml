@@ -77,6 +77,19 @@ paths:
           description: DPP onboard initiated. If connectWait==true, STA has associated.
         '408':
           description: Operation timed out because STA did not associate'
+          
+  /dpp/progress:
+    post:
+      tags:
+      - dpp
+      description: Sent if a progress event returned before complete/fail, this will catch the next event
+      operationId: dppProgress
+      responses:
+        '200':
+          description: DPP progress event received.
+        '408':
+          description: Operation timed out because STA did not associate'
+        
   
   /dpp/config:
     get:
